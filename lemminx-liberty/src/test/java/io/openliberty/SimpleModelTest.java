@@ -1,8 +1,8 @@
 package io.openliberty;
 
 import static io.openliberty.LibertyLemminxTestsUtils.createDOMDocument;
+import static org.junit.Assert.assertNotNull;
 import static io.openliberty.LibertyLemminxTestsUtils.cleanUpServerXML;
-
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -13,7 +13,9 @@ import java.util.logging.Logger;
 import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.extensions.contentmodel.settings.XMLValidationSettings;
 import org.eclipse.lemminx.services.XMLLanguageService;
+import org.eclipse.lemminx.settings.SharedSettings;
 import org.eclipse.lsp4j.Diagnostic;
+import org.eclipse.lsp4j.Position;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,10 +40,19 @@ public class SimpleModelTest {
     @Test(timeout = 10000)
     public void testFeatureDiagnostic() throws IOException, URISyntaxException {
 
-        DOMDocument document = createDOMDocument("/invalid-feature.xml", languageService); 
-        List<Diagnostic> diagnosticsList = languageService.doDiagnostics(document, () -> {}, new XMLValidationSettings());
+        DOMDocument document = createDOMDocument("/invalid-feature.xml", languageService);
+        List<Diagnostic> diagnosticsList = languageService.doDiagnostics(document, () -> {
+        }, new XMLValidationSettings());
         for (Diagnostic diag : diagnosticsList) {
             log.info(diag.toString());
         }
+    }
+
+    @Test(timeout = 10000)
+    public void testFeatureHover() throws IOException, URISyntaxException {
+        DOMDocument document = createDOMDocument("/simple-server.xml", languageService);
+        String hover = languageService.doHover(document, new Position(2, 18), new SharedSettings()).getContents()
+                .getRight().getValue();
+        assertNotNull(hover);
     }
 }
