@@ -1,22 +1,23 @@
 package io.openliberty.lemminx.liberty.services;
 
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
-import io.openliberty.lemminx.liberty.models.feature.*;
-import io.openliberty.lemminx.liberty.util.LibertyConstants;
-import com.google.gson.Gson;
 import java.util.logging.Logger;
+
+import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
+
+import io.openliberty.lemminx.liberty.models.feature.Feature;
+import io.openliberty.lemminx.liberty.util.LibertyConstants;
 
 public class FeatureService {
 
@@ -26,6 +27,8 @@ public class FeatureService {
   // shared between all Lemminx Language Feature Participants
 
   private static FeatureService instance;
+
+  protected static String version;
 
   public static FeatureService getInstance() {
     if (instance == null) {
@@ -51,6 +54,7 @@ public class FeatureService {
    * @return list of features supported by the provided version of liberty
    */
   private List<Feature> fetchFeaturesForVersion(String libertyVersion) throws IOException, JsonParseException {
+    LOGGER.info("fetching features for version:  "  + libertyVersion);
     String featureEndpoint = String.format(
         "https://repo1.maven.org/maven2/io/openliberty/features/features/%s/features-%s.json", libertyVersion,
         libertyVersion);
@@ -96,14 +100,13 @@ public class FeatureService {
 
     ArrayList<Feature> publicFeatures = new ArrayList<>();
     Arrays.asList(featureList).stream()
-            .filter(f -> f.getWlpInformation().getVisibility().equals(LibertyConstants.PUBLIC_VISIBILITY))
-            .forEach(publicFeatures::add);
+        .filter(f -> f.getWlpInformation().getVisibility().equals(LibertyConstants.PUBLIC_VISIBILITY))
+        .forEach(publicFeatures::add);
     defaultFeatureList = publicFeatures;
     return publicFeatures;
   }
 
-  public List<Feature> getFeatures(String libertyVersion, int requestDelay) {
-    LOGGER.fine("Getting features for version: " + libertyVersion);
+  public List<Feature> getFeatures(String libertyVersion, int requestDelay, boolean skipDelay) {
     // if the features are already cached in the feature cache
     if (featureCache.containsKey(libertyVersion)) {
       return featureCache.get(libertyVersion);
@@ -111,12 +114,19 @@ public class FeatureService {
     // else need to fetch the features from maven central
     try {
       // verify that request delay (seconds) has gone by since last fetch request
-      long currentTime = System.currentTimeMillis();
-      if (this.featureUpdateTime == -1 || currentTime >= (this.featureUpdateTime + (requestDelay*1000))) {
+      if (skipDelay) {
         List<Feature> features = fetchFeaturesForVersion(libertyVersion);
         featureCache.put(libertyVersion, features);
         this.featureUpdateTime = System.currentTimeMillis();
         return features;
+      } else {
+        long currentTime = System.currentTimeMillis();
+        if (this.featureUpdateTime == -1 || currentTime >= (this.featureUpdateTime + (requestDelay * 1000))) {
+          List<Feature> features = fetchFeaturesForVersion(libertyVersion);
+          featureCache.put(libertyVersion, features);
+          this.featureUpdateTime = System.currentTimeMillis();
+          return features;
+        }
       }
     } catch (Exception e) {
       // do nothing, continue on to returning default feature list
@@ -126,13 +136,13 @@ public class FeatureService {
     return defaultFeatures;
   }
 
-  public Optional<Feature> getFeature(String featureName, String libertyVersion, int requestDelay) {
-    List<Feature> features = getFeatures(libertyVersion, requestDelay);
+  public Optional<Feature> getFeature(String featureName, String libertyVersion, int requestDelay, boolean skipDelay) {
+    List<Feature> features = getFeatures(libertyVersion, requestDelay, skipDelay);
     return features.stream().filter(f -> f.getWlpInformation().getShortName().equalsIgnoreCase(featureName))
         .findFirst();
   }
 
-  public boolean featureExists(String featureName, String libertyVersion, int requestDelay) {
-    return this.getFeature(featureName, libertyVersion, requestDelay).isPresent();
+  public boolean featureExists(String featureName, String libertyVersion, int requestDelay, boolean skipDelay) {
+    return this.getFeature(featureName, libertyVersion, requestDelay, skipDelay).isPresent();
   }
 }

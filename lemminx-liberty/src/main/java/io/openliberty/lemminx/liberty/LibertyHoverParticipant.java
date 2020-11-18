@@ -50,7 +50,7 @@ public class LibertyHoverParticipant implements IHoverParticipant {
 	private Hover getHoverFeatureDescription(String featureName) {
 		final String libertyVersion = SettingsService.getInstance().getLibertyVersion();
 		final int requestDelay = SettingsService.getInstance().getRequestDelay();
-		Optional<Feature> feature = FeatureService.getInstance().getFeature(featureName, libertyVersion, requestDelay);
+		Optional<Feature> feature = FeatureService.getInstance().getFeature(featureName, libertyVersion, requestDelay, false);
 		if (feature.isPresent()) {
 			return new Hover(new MarkupContent("plaintext", feature.get().getShortDescription()));
 		}

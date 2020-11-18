@@ -26,9 +26,18 @@ import io.openliberty.lemminx.liberty.util.LibertyUtils;
 
 public class LibertyCompletionParticipant extends CompletionParticipantAdapter {
 
+    public List<DOMDocument> xmlDocuments;
+
+    private boolean skipDelay = false;
+
     @Override
     public void onXMLContent(ICompletionRequest request, ICompletionResponse response)
             throws IOException, BadLocationException {
+        if (LibertyUtils.isPomXMLFile(request.getXMLDocument())) {
+            LibertyUtils.refreshMap(request.getXMLDocument());
+            this.skipDelay = true;
+            return;
+        }
         if (!LibertyUtils.isServerXMLFile(request.getXMLDocument()))
             return;
 
@@ -71,9 +80,19 @@ public class LibertyCompletionParticipant extends CompletionParticipantAdapter {
 
     private List<CompletionItem> buildCompletionItems(DOMElement featureElement, DOMDocument document,
             List<String> existingFeatures) {
-        final String libertyVersion = SettingsService.getInstance().getLibertyVersion();
+
+        String libertyVersion;
+        libertyVersion = SettingsService.getInstance().getLibertyVersion();
+
+
+        if (libertyVersion == null) {
+            libertyVersion = LibertyUtils.getVersionFromMap(document.getDocumentURI());
+        }
+
         final int requestDelay = SettingsService.getInstance().getRequestDelay();
-        List<Feature> features = FeatureService.getInstance().getFeatures(libertyVersion, requestDelay);
+        List<Feature> features = FeatureService.getInstance().getFeatures(libertyVersion, requestDelay, this.skipDelay);
+        // reset skip delay to false
+        this.skipDelay = false;
 
         // filter out features that are already specified in the featureManager block
         List<CompletionItem> uniqueFeatureCompletionItems = features.stream()

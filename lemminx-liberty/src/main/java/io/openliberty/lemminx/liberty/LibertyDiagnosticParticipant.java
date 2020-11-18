@@ -16,11 +16,19 @@ import java.util.*;
 
 public class LibertyDiagnosticParticipant implements IDiagnosticsParticipant {
 
+    private boolean skipDelay = false;
+
     @Override
     public void doDiagnostics(DOMDocument domDocument, List<Diagnostic> diagnostics,
             XMLValidationSettings validationSettings, CancelChecker cancelChecker) {
+        if (LibertyUtils.isPomXMLFile(domDocument)) {
+            LibertyUtils.refreshMap(domDocument);
+            this.skipDelay = true;
+            return;
+        }
         if (!LibertyUtils.isServerXMLFile(domDocument))
             return;
+
         try {
             validateFeatures(domDocument, diagnostics);
         } catch (IOException e) {
@@ -44,7 +52,10 @@ public class LibertyDiagnosticParticipant implements IDiagnosticsParticipant {
             return;
         }
 
-        final String libertyVersion = SettingsService.getInstance().getLibertyVersion();
+        String libertyVersion = SettingsService.getInstance().getLibertyVersion();
+        if (libertyVersion == null) {
+            libertyVersion = LibertyUtils.getVersionFromMap(domDocument.getDocumentURI());
+        }
         final int requestDelay = SettingsService.getInstance().getRequestDelay();
 
         // Search for duplicate features
@@ -56,7 +67,8 @@ public class LibertyDiagnosticParticipant implements IDiagnosticsParticipant {
             // skip nodes that do not have any text value (ie. comments)
             if (featureTextNode != null) {
                 String featureName = featureTextNode.getTextContent();
-                if (!FeatureService.getInstance().featureExists(featureName, libertyVersion, requestDelay)) {
+                if (!FeatureService.getInstance().featureExists(featureName, libertyVersion, requestDelay, this.skipDelay)) {
+                    this.skipDelay = false;
                     Range range = XMLPositionUtility.createRange(featureTextNode.getStart(), featureTextNode.getEnd(),
                             domDocument);
                     String message = "ERROR: The feature \"" + featureName + "\" does not exist.";
