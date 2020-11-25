@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import org.apache.maven.model.Plugin;
 import org.apache.maven.shared.invoker.DefaultInvocationRequest;
 import org.apache.maven.shared.invoker.DefaultInvoker;
 import org.apache.maven.shared.invoker.InvocationOutputHandler;
@@ -59,6 +60,8 @@ public class LibertyUtils {
             if (!pomXmlFile.exists()) {
                 return version;
             }
+
+            Plugin plugin = getPlugin("io.openliberty.tools", "liberty-maven-plugin");
             InvocationRequest mavenReq = new DefaultInvocationRequest();
             mavenReq.setPomFile(pomXmlFile);
             mavenReq.setGoals(Collections.singletonList("liberty:version"));
@@ -109,6 +112,8 @@ public class LibertyUtils {
             Map<Path, String> buildFilesMap = LibertyExtension.getBuildFilesMap();
             // TODO: problem if server.xml is not in the same relative location to the pom.xml
             // ie. if they specified a different server.xml location in their pom.xml
+
+            // look for configFile or serverXMLFile configuration in their pom.xml?
             String pomXmlUri = serverXMLUri.substring(0, serverXMLUri.lastIndexOf("src/"))
                     + "pom.xml";
             URI pomUri = new URI(pomXmlUri);
@@ -147,6 +152,21 @@ public class LibertyUtils {
             e.printStackTrace();
             return;
         }
+    }
+
+    /**
+     * Given the groupId and artifactId get the corresponding plugin
+     * 
+     * @param groupId
+     * @param artifactId
+     * @return Plugin
+     */
+    protected Plugin getPlugin(String groupId, String artifactId) {
+        Plugin plugin = project.getPlugin(groupId + ":" + artifactId);
+        if (plugin == null) {
+            plugin = plugin(groupId(groupId), artifactId(artifactId), version("RELEASE"));
+        }
+        return plugin;
     }
 
 }

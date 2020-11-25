@@ -23,6 +23,7 @@ import org.eclipse.lemminx.uriresolver.URIResolverExtension;
 import org.eclipse.lsp4j.InitializeParams;
 
 import io.openliberty.lemminx.liberty.services.SettingsService;
+import io.openliberty.lemminx.liberty.util.LibertyConstants;
 import io.openliberty.lemminx.liberty.util.LibertyUtils;
 
 public class LibertyExtension implements IXMLExtension {
@@ -86,7 +87,7 @@ public class LibertyExtension implements IXMLExtension {
             // searches for pom.xml
             // TODO: exclude directories like: target, build, etc.
             List<Path> buildFiles = Files.walk(rootPath)
-                    .filter(p -> (Files.isRegularFile(p) && p.getFileName().endsWith("pom.xml")))
+                    .filter(p -> (Files.isRegularFile(p) && p.getFileName().endsWith(LibertyConstants.POM_XML)))
                     .collect(Collectors.toList());
             for (Path p : buildFiles) {
                 String version = LibertyUtils.getVersion(p);
