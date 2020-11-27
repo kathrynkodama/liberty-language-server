@@ -54,7 +54,7 @@ public class FeatureService {
    * @return list of features supported by the provided version of liberty
    */
   private List<Feature> fetchFeaturesForVersion(String libertyVersion) throws IOException, JsonParseException {
-    LOGGER.info("fetching features for version:  "  + libertyVersion);
+    LOGGER.info("Fetching features for version:  "  + libertyVersion);
     String featureEndpoint = String.format(
         "https://repo1.maven.org/maven2/io/openliberty/features/features/%s/features-%s.json", libertyVersion,
         libertyVersion);
