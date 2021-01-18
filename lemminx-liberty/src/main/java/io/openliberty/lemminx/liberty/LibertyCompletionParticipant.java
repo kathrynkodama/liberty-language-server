@@ -30,7 +30,9 @@ public class LibertyCompletionParticipant extends CompletionParticipantAdapter {
     public void onXMLContent(ICompletionRequest request, ICompletionResponse response)
             throws IOException, BadLocationException {
         if (!LibertyUtils.isServerXMLFile(request.getXMLDocument()))
-            return;
+            return;    
+
+        LibertyUtils.getVersion(request.getXMLDocument());
 
         DOMElement parentElement = request.getParentElement();
         if (parentElement == null || parentElement.getTagName() == null)
@@ -71,9 +73,15 @@ public class LibertyCompletionParticipant extends CompletionParticipantAdapter {
 
     private List<CompletionItem> buildCompletionItems(DOMElement featureElement, DOMDocument document,
             List<String> existingFeatures) {
-        final String libertyVersion = SettingsService.getInstance().getLibertyVersion();
+        String libertyVersion = SettingsService.getInstance().getLibertyVersion();
+
+        // if (libertyVersion == null) {
+        //     // try to get version from metadata file
+        //     libertyVersion = LibertyUtils.getVersion(document);
+
+        // }
         final int requestDelay = SettingsService.getInstance().getRequestDelay();
-        List<Feature> features = FeatureService.getInstance().getFeatures(libertyVersion, requestDelay);
+        List<Feature> features = FeatureService.getInstance().getFeatures(libertyVersion, requestDelay, document.getDocumentURI());
 
         // filter out features that are already specified in the featureManager block
         List<CompletionItem> uniqueFeatureCompletionItems = features.stream()

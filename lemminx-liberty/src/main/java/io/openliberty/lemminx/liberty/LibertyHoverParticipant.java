@@ -41,16 +41,16 @@ public class LibertyHoverParticipant implements IHoverParticipant {
 		// if we are hovering over text inside a <feature> element
 		if (LibertyConstants.FEATURE_ELEMENT.equals(parentElement.getTagName())) {
 			String featureName = request.getNode().getTextContent();
-			return getHoverFeatureDescription(featureName);
+			return getHoverFeatureDescription(featureName, request.getXMLDocument().getDocumentURI());
 		}
 
 		return null;
 	}
 
-	private Hover getHoverFeatureDescription(String featureName) {
+	private Hover getHoverFeatureDescription(String featureName, String documentURI) {
 		final String libertyVersion = SettingsService.getInstance().getLibertyVersion();
 		final int requestDelay = SettingsService.getInstance().getRequestDelay();
-		Optional<Feature> feature = FeatureService.getInstance().getFeature(featureName, libertyVersion, requestDelay);
+		Optional<Feature> feature = FeatureService.getInstance().getFeature(featureName, libertyVersion, requestDelay, documentURI);
 		if (feature.isPresent()) {
 			return new Hover(new MarkupContent("plaintext", feature.get().getShortDescription()));
 		}
